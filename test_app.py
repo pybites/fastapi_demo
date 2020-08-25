@@ -7,7 +7,7 @@ from app import app
 
 @pytest.fixture
 def client():
-    yield TestClient(app)
+    return TestClient(app)
 
 
 def test_get_all_bites(client):
@@ -35,18 +35,22 @@ def test_get_first_bite(client, idx, expected):
 def test_bite_not_found(client):
     response = client.get("/4")
     assert response.status_code == 404
+    assert "Bite not found" in str(response._content)
 
 
 def test_add_bite(client):
+    response = client.get("/").json()
+    num_objects_before = len(response)
     new_bite = {"name": "Top 10 PyBites tags", "level": "3"}
     response = client.post("/", json=new_bite)
     assert response.status_code == 201
-    new_bite_response = {'description': None, 'level': 3,
-                         'name': 'Top 10 PyBites tags', 'tags': []}
-    assert response.json() == new_bite_response
+    expected = {'description': None, 'level': 3,
+                'name': 'Top 10 PyBites tags', 'tags': []}
+    assert response.json() == expected
     response = client.get("/").json()
-    assert len(response) == 4
-    assert response.get('4') == new_bite_response
+    num_objects_after = len(response)
+    assert num_objects_after - num_objects_before == 1
+    assert response.get(str(num_objects_after)) == expected
 
 
 def test_update_bite(client):
